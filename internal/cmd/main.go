@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -20,6 +20,7 @@ import (
 )
 
 func main() {
+	runtime.GOMAXPROCS((runtime.NumCPU()))
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)
 
@@ -38,7 +39,6 @@ func main() {
 	e.Use(echoMiddleware.Logger())
 	e.Use(echoMiddleware.Recover())
 	e.Use(middleware.JWTAuth(os.Getenv("JWT_SECRET")))
-	e.Validator = middleware.NewCustomValidator()
 
 	authHandler := handler.NewAuthHandler(userRepo, os.Getenv("JWT_SECRET"))
 	coinHandler := handler.NewCoinHandler(transactionRepo, userRepo)
@@ -55,15 +55,8 @@ func main() {
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	s := &http.Server{
-		Addr:         ":8080",
-		ReadTimeout:  20 * time.Second,
-		WriteTimeout: 20 * time.Second,
-		IdleTimeout:  30 * time.Second,
-	}
-
 	go func() {
-		if err := e.StartServer(s); err != nil {
+		if err := e.Start(":8080"); err != nil {
 			e.Logger.Info("Shutting down the server")
 		}
 	}()
