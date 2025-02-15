@@ -47,8 +47,8 @@ func TestAuth(t *testing.T) {
 	})
 
 	t.Run("Re-authentication with valid credentials", func(t *testing.T) {
-		token1 := getAuthToken("testuser", "testpass")
-		token2 := getAuthToken("testuser", "testpass")
+		token1 := getAuthToken("testuser1", "testpass1")
+		token2 := getAuthToken("testuser1", "testpass1")
 		if token1 == "" || token2 == "" {
 			t.Error("Token not received")
 		}
@@ -92,7 +92,7 @@ func TestSendCoins(t *testing.T) {
 	token := getAuthToken("testuser", "testpass")
 
 	t.Run("Successful send", func(t *testing.T) {
-		payload := map[string]interface{}{"toUser": "c", "amount": 10}
+		payload := map[string]interface{}{"toUser": "testuser1", "amount": 10}
 		body, _ := json.Marshal(payload)
 		req, _ := http.NewRequest("POST", baseURL+"/api/sendCoin", bytes.NewBuffer(body))
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -105,7 +105,7 @@ func TestSendCoins(t *testing.T) {
 	})
 
 	t.Run("Insufficient coins", func(t *testing.T) {
-		payload := map[string]interface{}{"toUser": "c", "amount": 9999}
+		payload := map[string]interface{}{"toUser": "testuser1", "amount": 9999}
 		body, _ := json.Marshal(payload)
 		req, _ := http.NewRequest("POST", baseURL+"/api/sendCoin", bytes.NewBuffer(body))
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -118,7 +118,7 @@ func TestSendCoins(t *testing.T) {
 	})
 
 	t.Run("Send negative amount", func(t *testing.T) {
-		payload := map[string]interface{}{"toUser": "c", "amount": -10}
+		payload := map[string]interface{}{"toUser": "testuser1", "amount": -10}
 		body, _ := json.Marshal(payload)
 		req, _ := http.NewRequest("POST", baseURL+"/api/sendCoin", bytes.NewBuffer(body))
 		req.Header.Set("Authorization", "Bearer "+token)

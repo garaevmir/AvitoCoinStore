@@ -35,8 +35,8 @@ func main() {
 		},
 	})
 
-	rate := vegeta.Rate{Freq: 200, Per: time.Second}
-	duration := 15 * time.Second
+	rate := vegeta.Rate{Freq: 45, Per: time.Second}
+	duration := 30 * time.Second
 
 	attacker := vegeta.NewAttacker()
 	var metrics vegeta.Metrics
