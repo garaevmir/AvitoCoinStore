@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"time"
@@ -15,6 +16,17 @@ type AuthRequest struct {
 }
 
 func main() {
+	rpsFlag := flag.Int("rps", 100, "Requests per second")
+	durationFlag := flag.Duration("duration", 1*time.Second, "Test duration (e.g. 5s, 1m)")
+	flag.Parse()
+
+	if *rpsFlag <= 0 {
+		log.Fatal("rps must be a positive integer")
+	}
+	if *durationFlag <= 0 {
+		log.Fatal("duration must be a positive value")
+	}
+
 	targetURL := "http://localhost:8080/api/auth"
 	authPayload := AuthRequest{
 		Username: "test_user",
@@ -35,8 +47,8 @@ func main() {
 		},
 	})
 
-	rate := vegeta.Rate{Freq: 400, Per: time.Second}
-	duration := 3 * time.Second
+	rate := vegeta.Rate{Freq: *rpsFlag, Per: time.Second}
+	duration := *durationFlag
 
 	attacker := vegeta.NewAttacker()
 	var metrics vegeta.Metrics
