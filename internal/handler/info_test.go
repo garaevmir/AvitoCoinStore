@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/garaevmir/avitocoinstore/internal/model"
-	"github.com/garaevmir/avitocoinstore/tests/mock_test/mocks"
+	"github.com/garaevmir/avitocoinstore/tests/mocks"
 )
 
 func TestInfoHandler_GetUserInfo(t *testing.T) {

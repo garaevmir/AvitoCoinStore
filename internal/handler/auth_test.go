@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/garaevmir/avitocoinstore/internal/model"
-	"github.com/garaevmir/avitocoinstore/tests/mock_test/mocks"
+	"github.com/garaevmir/avitocoinstore/tests/mocks"
 )
 
 func TestAuthHandler_Login(t *testing.T) {

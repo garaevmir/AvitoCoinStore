@@ -13,7 +13,7 @@ import (
 
 	"github.com/garaevmir/avitocoinstore/internal/model"
 	"github.com/garaevmir/avitocoinstore/internal/service"
-	"github.com/garaevmir/avitocoinstore/tests/mock_test/mocks"
+	"github.com/garaevmir/avitocoinstore/tests/mocks"
 )
 
 func TestShopHandler_BuyItem(t *testing.T) {
