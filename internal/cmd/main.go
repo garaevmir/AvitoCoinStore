@@ -13,7 +13,6 @@ import (
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
-	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/garaevmir/avitocoinstore/internal/handler"
 	"github.com/garaevmir/avitocoinstore/internal/middleware"
@@ -53,8 +52,6 @@ func main() {
 	api.GET("/info", infoHandler.GetUserInfo)
 	api.POST("/sendCoin", coinHandler.SendCoins)
 	api.GET("/buy/:item", shopHandler.BuyItem)
-
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	s := &http.Server{
 		Addr: ":8080",
