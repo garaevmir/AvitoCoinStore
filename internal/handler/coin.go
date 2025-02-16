@@ -24,33 +24,33 @@ func NewCoinHandler(tRepo repository.TransactionRepositoryInt, uRepo repository.
 func (h *CoinHandler) SendCoins(c echo.Context) error {
 	var req model.SendCoinRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, model.ErrInvalidRequest)
+		return c.JSON(http.StatusBadRequest, model.ErrorResponse{Errors: model.ErrInvalidRequest.Error()})
 	}
 
 	if req.Amount <= 0 {
-		return c.JSON(http.StatusBadRequest, model.ErrNegAmount)
+		return c.JSON(http.StatusBadRequest, model.ErrorResponse{Errors: model.ErrNegAmount.Error()})
 	}
 
 	if req.ToUser == "" {
-		return c.JSON(http.StatusBadRequest, model.ErrUserNotFound)
+		return c.JSON(http.StatusBadRequest, model.ErrorResponse{Errors: model.ErrUserNotFound.Error()})
 	}
 
 	fromUserID := c.Get("user_id").(string)
 	toUser, err := h.userRepo.GetUserByUsername(c.Request().Context(), req.ToUser)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, model.ErrUserNotFound)
+		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Errors: model.ErrUserNotFound.Error()})
 	}
 
 	if toUser == nil {
-		return c.JSON(http.StatusNotFound, model.ErrUserNotFound)
+		return c.JSON(http.StatusNotFound, model.ErrorResponse{Errors: model.ErrUserNotFound.Error()})
 	}
 
 	if err := h.transactionRepo.TransferCoins(c.Request().Context(), fromUserID, toUser.ID, req.Amount); err != nil {
 		switch err {
 		case model.ErrInsufficientFunds:
-			return c.JSON(http.StatusBadRequest, model.ErrInsufficientFunds)
+			return c.JSON(http.StatusBadRequest, model.ErrorResponse{Errors: model.ErrInsufficientFunds.Error()})
 		default:
-			return c.JSON(http.StatusInternalServerError, model.ErrInternalError)
+			return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Errors: model.ErrInternalError.Error()})
 		}
 	}
 

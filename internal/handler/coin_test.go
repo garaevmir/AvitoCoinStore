@@ -29,25 +29,6 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 		}
 	}
 
-	t.Run("Invalid request", func(t *testing.T) {
-		reqBody := map[string]int{
-			"ToUser": 1,
-			"Amount": 1,
-		}
-		body, _ := json.Marshal(reqBody)
-
-		req := httptest.NewRequest(http.MethodPost, "/api/sendCoin", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		rec := httptest.NewRecorder()
-
-		c := e.NewContext(req, rec)
-		err := coinHandler.SendCoins(c)
-
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-
-	})
-
 	t.Run("Successful coin transfer", func(t *testing.T) {
 		reqBody := model.SendCoinRequest{
 			ToUser: "user2",
@@ -74,6 +55,28 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 		userRepo.AssertExpectations(t)
 	})
 
+	t.Run("Invalid request", func(t *testing.T) {
+		reqBody := map[string]int{
+			"ToUser": 1,
+			"Amount": 1,
+		}
+		body, _ := json.Marshal(reqBody)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/sendCoin", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+
+		c := e.NewContext(req, rec)
+		err := coinHandler.SendCoins(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrInvalidRequest.Error(), errorResp.Errors)
+	})
+
 	t.Run("Insufficient funds", func(t *testing.T) {
 		reqBody := model.SendCoinRequest{
 			ToUser: "user2",
@@ -96,6 +99,10 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrInsufficientFunds.Error(), errorResp.Errors)
 	})
 
 	t.Run("Invalid username error", func(t *testing.T) {
@@ -114,6 +121,10 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrUserNotFound.Error(), errorResp.Errors)
 	})
 
 	t.Run("Getting by username error", func(t *testing.T) {
@@ -135,6 +146,10 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrUserNotFound.Error(), errorResp.Errors)
 	})
 
 	t.Run("User not found error", func(t *testing.T) {
@@ -156,6 +171,10 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusNotFound, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrUserNotFound.Error(), errorResp.Errors)
 	})
 
 	t.Run("Database error", func(t *testing.T) {
@@ -180,6 +199,10 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrInternalError.Error(), errorResp.Errors)
 	})
 
 	t.Run("Error negative coin amount", func(t *testing.T) {
@@ -205,5 +228,9 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrNegAmount.Error(), errorResp.Errors)
 	})
 }

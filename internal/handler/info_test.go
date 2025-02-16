@@ -90,6 +90,10 @@ func TestInfoHandler_GetUserInfo(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusNotFound, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrUserNotFound.Error(), errorResp.Errors)
 	})
 
 	t.Run("Database error", func(t *testing.T) {
@@ -103,6 +107,10 @@ func TestInfoHandler_GetUserInfo(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrInternalError.Error(), errorResp.Errors)
 	})
 
 	t.Run("Error getting user inventory", func(t *testing.T) {
@@ -119,6 +127,10 @@ func TestInfoHandler_GetUserInfo(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrInventory.Error(), errorResp.Errors)
 	})
 
 	t.Run("Error getting transaction history", func(t *testing.T) {
@@ -138,6 +150,10 @@ func TestInfoHandler_GetUserInfo(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+
+		var errorResp model.ErrorResponse
+		json.Unmarshal(rec.Body.Bytes(), &errorResp)
+		assert.Equal(t, model.ErrHistory.Error(), errorResp.Errors)
 	})
 
 	t.Run("Empty transaction history", func(t *testing.T) {

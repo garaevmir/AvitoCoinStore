@@ -37,19 +37,19 @@ func (h *InfoHandler) GetUserInfo(c echo.Context) error {
 	user, err := h.userRepo.GetUserByID(c.Request().Context(), userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, model.ErrUserNotFound)
+			return c.JSON(http.StatusNotFound, model.ErrorResponse{Errors: model.ErrUserNotFound.Error()})
 		}
-		return c.JSON(http.StatusInternalServerError, model.ErrInternalError)
+		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Errors: model.ErrInternalError.Error()})
 	}
 
 	inventory, err := h.inventoryRepo.GetUserInventory(c.Request().Context(), userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, model.ErrInventory)
+		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Errors: model.ErrInventory.Error()})
 	}
 
 	history, err := h.transactionRepo.GetTransactionHistory(c.Request().Context(), userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, model.ErrHistory)
+		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Errors: model.ErrHistory.Error()})
 	}
 
 	return c.JSON(http.StatusOK, model.InfoResponse{
