@@ -9,15 +9,18 @@ import (
 	"github.com/garaevmir/avitocoinstore/internal/repository"
 )
 
+// A structure for a send coin handler
 type CoinHandler struct {
 	transactionRepo repository.TransactionRepositoryInt
 	userRepo        repository.UserRepositoryInt
 }
 
+// Constructor for send coin handler
 func NewCoinHandler(tRepo repository.TransactionRepositoryInt, uRepo repository.UserRepositoryInt) *CoinHandler {
 	return &CoinHandler{transactionRepo: tRepo, userRepo: uRepo}
 }
 
+// Function for /api/sendCoin request
 func (h *CoinHandler) SendCoins(c echo.Context) error {
 	var req model.SendCoinRequest
 	if err := c.Bind(&req); err != nil {

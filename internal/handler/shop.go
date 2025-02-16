@@ -9,14 +9,17 @@ import (
 	"github.com/garaevmir/avitocoinstore/internal/service"
 )
 
+// A structure for a buy handler
 type ShopHandler struct {
 	shopService *service.ShopService
 }
 
+// Constructor for buy handler
 func NewShopHandler(s *service.ShopService) *ShopHandler {
 	return &ShopHandler{shopService: s}
 }
 
+// Function for /api/buy request
 func (h *ShopHandler) BuyItem(c echo.Context) error {
 	itemName := c.Param("item")
 	userID := c.Get("user_id").(string)

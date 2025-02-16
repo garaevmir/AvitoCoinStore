@@ -1,5 +1,6 @@
 package model
 
+// An item available in the shop
 type Item struct {
 	Name  string
 	Price int

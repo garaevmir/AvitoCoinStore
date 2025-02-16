@@ -10,12 +10,14 @@ import (
 	"github.com/garaevmir/avitocoinstore/internal/repository"
 )
 
+// A structure for info handler
 type InfoHandler struct {
 	userRepo        repository.UserRepositoryInt
 	inventoryRepo   repository.InventoryRepositoryInt
 	transactionRepo repository.TransactionRepositoryInt
 }
 
+// Constructor for info handler
 func NewInfoHandler(
 	uRepo repository.UserRepositoryInt,
 	iRepo repository.InventoryRepositoryInt,
@@ -28,6 +30,7 @@ func NewInfoHandler(
 	}
 }
 
+// Function for /api/info request
 func (h *InfoHandler) GetUserInfo(c echo.Context) error {
 	userID := c.Get("user_id").(string)
 

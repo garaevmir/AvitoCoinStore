@@ -8,12 +8,14 @@ import (
 	"github.com/garaevmir/avitocoinstore/internal/repository"
 )
 
+// Structure representing shop
 type ShopService struct {
 	userRepo        repository.UserRepositoryInt
 	transactionRepo repository.TransactionRepositoryInt
 	inventoryRepo   repository.InventoryRepositoryInt
 }
 
+// Constructor for the shop
 func NewShopService(
 	uRepo repository.UserRepositoryInt,
 	tRepo repository.TransactionRepositoryInt,
@@ -26,6 +28,7 @@ func NewShopService(
 	}
 }
 
+// Function that buys item itemName for user with userID during transaction, returns error
 func (s *ShopService) BuyItem(ctx context.Context, userID string, itemName string) error {
 	item, exists := model.Items[itemName]
 	if !exists {

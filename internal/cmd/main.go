@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 
@@ -21,7 +20,6 @@ import (
 )
 
 func main() {
-	runtime.GOMAXPROCS((runtime.NumCPU()))
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)
 
@@ -36,7 +34,6 @@ func main() {
 	inventoryRepo := repository.NewInventoryRepository(pool)
 	shopService := service.NewShopService(userRepo, transactionRepo, inventoryRepo)
 
-	e.Use(echoMiddleware.RateLimiter(echoMiddleware.NewRateLimiterMemoryStore(1000)))
 	e.Use(echoMiddleware.Logger())
 	e.Use(echoMiddleware.Recover())
 

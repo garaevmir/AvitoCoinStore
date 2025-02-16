@@ -9,19 +9,23 @@ import (
 	"github.com/garaevmir/avitocoinstore/internal/model"
 )
 
+// Interface for transaction repository, needed for testing
 type TransactionRepositoryInt interface {
 	TransferCoins(ctx context.Context, fromUserID, toUserID string, amount int) error
 	GetTransactionHistory(ctx context.Context, userID string) (*model.TransactionHistory, error)
 }
 
+// Transaction repository, for sendCoin manipulations
 type TransactionRepository struct {
 	pool DB
 }
 
+// Constructor for transaction repository
 func NewTransactionRepository(db DB) *TransactionRepository {
 	return &TransactionRepository{pool: db}
 }
 
+// Function that transfers coins from one user to another using batch in one transaction, returns error
 func (r TransactionRepository) TransferCoins(ctx context.Context, fromUserID, toUserID string, amount int) error {
 	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -66,6 +70,7 @@ func (r TransactionRepository) TransferCoins(ctx context.Context, fromUserID, to
 	return nil
 }
 
+// Function that extracts transaction history of a user by userID, returns TransactionHistory structure and error
 func (r TransactionRepository) GetTransactionHistory(ctx context.Context, userID string) (*model.TransactionHistory, error) {
 	history := &model.TransactionHistory{
 		Received: make([]model.ReceivedTransaction, 0),

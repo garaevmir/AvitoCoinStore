@@ -11,15 +11,18 @@ import (
 	"github.com/garaevmir/avitocoinstore/internal/repository"
 )
 
+// A structure for a authentication handler
 type AuthHandler struct {
 	userRepo repository.UserRepositoryInt
 	secret   string
 }
 
+// Constructor for authentication handler
 func NewAuthHandler(userRepo repository.UserRepositoryInt, secret string) *AuthHandler {
 	return &AuthHandler{userRepo: userRepo, secret: secret}
 }
 
+// Function for /api/auth request
 func (h *AuthHandler) Login(c echo.Context) error {
 	var req model.AuthRequest
 	if err := c.Bind(&req); err != nil {

@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   avito-shop-service:
@@ -19,9 +19,9 @@ services:
     image: postgres:13
     container_name: postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: shop
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB}
     volumes:
       - ./migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
