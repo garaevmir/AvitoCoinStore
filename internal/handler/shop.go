@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+
 	"github.com/garaevmir/avitocoinstore/internal/model"
 	"github.com/garaevmir/avitocoinstore/internal/service"
-	"github.com/labstack/echo/v4"
 )
 
 type ShopHandler struct {
@@ -21,12 +24,12 @@ func (h *ShopHandler) BuyItem(c echo.Context) error {
 	if err := h.shopService.BuyItem(c.Request().Context(), userID, itemName); err != nil {
 		switch err {
 		case model.ErrItemNotFound:
-			return c.JSON(400, model.ErrorResponse{Errors: "item not found"})
+			return c.JSON(http.StatusBadRequest, model.ErrorResponse{Errors: model.ErrItemNotFound.Error()})
 		case model.ErrInsufficientFunds:
-			return c.JSON(400, model.ErrorResponse{Errors: "insufficient coins"})
+			return c.JSON(http.StatusBadRequest, model.ErrorResponse{Errors: model.ErrInsufficientFunds.Error()})
 		default:
-			return c.JSON(500, model.ErrorResponse{Errors: "internal error"})
+			return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Errors: model.ErrInternalError.Error()})
 		}
 	}
-	return c.JSON(200, map[string]interface{}{"status": "success"})
+	return c.JSON(http.StatusOK, map[string]interface{}{"status": "success"})
 }

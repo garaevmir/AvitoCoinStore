@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/garaevmir/avitocoinstore/internal/model"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/garaevmir/avitocoinstore/internal/model"
 )
 
 type TransactionRepositoryInt interface {
@@ -15,11 +15,11 @@ type TransactionRepositoryInt interface {
 }
 
 type TransactionRepository struct {
-	pool *pgxpool.Pool
+	pool DB
 }
 
-func NewTransactionRepository(pool *pgxpool.Pool) *TransactionRepository {
-	return &TransactionRepository{pool: pool}
+func NewTransactionRepository(db DB) *TransactionRepository {
+	return &TransactionRepository{pool: db}
 }
 
 func (r TransactionRepository) TransferCoins(ctx context.Context, fromUserID, toUserID string, amount int) error {

@@ -10,9 +10,6 @@ import (
 func JWTAuth(secret string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if c.Path() == "/api/auth" && c.Request().Method == "POST" {
-				return next(c)
-			}
 
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {

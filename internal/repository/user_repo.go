@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/garaevmir/avitocoinstore/internal/model"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/garaevmir/avitocoinstore/internal/model"
 )
 
 type UserRepositoryInt interface {
@@ -17,12 +17,18 @@ type UserRepositoryInt interface {
 	BeginTx(ctx context.Context) (pgx.Tx, error)
 }
 
-type UserRepository struct {
-	pool *pgxpool.Pool
+type DB interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
-func NewUserRepository(pool *pgxpool.Pool) *UserRepository {
-	return &UserRepository{pool: pool}
+type UserRepository struct {
+	pool DB
+}
+
+func NewUserRepository(db DB) *UserRepository {
+	return &UserRepository{pool: db}
 }
 
 func (r UserRepository) CreateUser(ctx context.Context, user *model.User) error {
@@ -33,7 +39,7 @@ func (r UserRepository) CreateUser(ctx context.Context, user *model.User) error 
 		user.Username, user.PasswordHash, user.Coins,
 	).Scan(&user.ID)
 	if err != nil {
-		log.Printf("Error creting user: %v", err)
+		log.Printf("Error creating user: %v\n", err)
 		return err
 	}
 	return nil

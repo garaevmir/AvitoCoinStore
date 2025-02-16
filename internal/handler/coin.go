@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+
 	"github.com/garaevmir/avitocoinstore/internal/model"
 	"github.com/garaevmir/avitocoinstore/internal/repository"
-	"github.com/labstack/echo/v4"
 )
 
 type CoinHandler struct {
@@ -18,25 +21,34 @@ func NewCoinHandler(tRepo repository.TransactionRepositoryInt, uRepo repository.
 func (h *CoinHandler) SendCoins(c echo.Context) error {
 	var req model.SendCoinRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(400, model.ErrorResponse{Errors: "invalid request"})
+		return c.JSON(http.StatusBadRequest, model.ErrInvalidRequest)
 	}
 
 	if req.Amount <= 0 {
-		return c.JSON(400, model.ErrorResponse{Errors: "amount must be positive"})
+		return c.JSON(http.StatusBadRequest, model.ErrNegAmount)
+	}
+
+	if req.ToUser == "" {
+		return c.JSON(http.StatusBadRequest, model.ErrUserNotFound)
 	}
 
 	fromUserID := c.Get("user_id").(string)
 	toUser, err := h.userRepo.GetUserByUsername(c.Request().Context(), req.ToUser)
 	if err != nil {
-		return c.JSON(404, model.ErrorResponse{Errors: "user not found"})
+		return c.JSON(http.StatusInternalServerError, model.ErrUserNotFound)
 	}
 
 	if toUser == nil {
-		return c.JSON(404, model.ErrorResponse{Errors: "user not found"})
+		return c.JSON(http.StatusNotFound, model.ErrUserNotFound)
 	}
 
 	if err := h.transactionRepo.TransferCoins(c.Request().Context(), fromUserID, toUser.ID, req.Amount); err != nil {
-		return c.JSON(400, model.ErrorResponse{Errors: err.Error()})
+		switch err {
+		case model.ErrInsufficientFunds:
+			return c.JSON(http.StatusBadRequest, model.ErrInsufficientFunds)
+		default:
+			return c.JSON(http.StatusInternalServerError, model.ErrInternalError)
+		}
 	}
 
 	return c.JSON(200, map[string]interface{}{"status": "success"})

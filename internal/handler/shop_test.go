@@ -1,4 +1,4 @@
-package mock_test
+package handler
 
 import (
 	"encoding/json"
@@ -7,13 +7,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/garaevmir/avitocoinstore/internal/handler"
-	"github.com/garaevmir/avitocoinstore/internal/model"
-	"github.com/garaevmir/avitocoinstore/internal/service"
-	"github.com/garaevmir/avitocoinstore/tests/mocks"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/garaevmir/avitocoinstore/internal/model"
+	"github.com/garaevmir/avitocoinstore/internal/service"
+	"github.com/garaevmir/avitocoinstore/tests/mock_test/mocks"
 )
 
 func TestShopHandler_BuyItem(t *testing.T) {
@@ -23,7 +23,7 @@ func TestShopHandler_BuyItem(t *testing.T) {
 	invRepo := new(mocks.InventoryRepositoryMock)
 	txMock := new(mocks.TxMock)
 	shopService := service.NewShopService(userRepo, txRepo, invRepo)
-	shopHandler := handler.NewShopHandler(shopService)
+	shopHandler := NewShopHandler(shopService)
 
 	txMock.On("Commit", mock.Anything).Return(nil)
 	txMock.On("Rollback", mock.Anything).Return(nil)
@@ -63,7 +63,7 @@ func TestShopHandler_BuyItem(t *testing.T) {
 		invRepo.AssertExpectations(t)
 	})
 
-	t.Run("Error: insufficient funds", func(t *testing.T) {
+	t.Run("Insufficient funds error", func(t *testing.T) {
 		userRepo.On("GetUserByID", mock.Anything, "user1").
 			Return(&model.User{ID: "user1", Coins: 100}, nil).Once()
 
@@ -81,10 +81,10 @@ func TestShopHandler_BuyItem(t *testing.T) {
 
 		var errorResp model.ErrorResponse
 		json.Unmarshal(rec.Body.Bytes(), &errorResp)
-		assert.Equal(t, "insufficient coins", errorResp.Errors)
+		assert.Equal(t, model.ErrInsufficientFunds.Error(), errorResp.Errors)
 	})
 
-	t.Run("Error: item not found", func(t *testing.T) {
+	t.Run("Item not found error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/buy/unknown_item", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -99,15 +99,18 @@ func TestShopHandler_BuyItem(t *testing.T) {
 
 		var errorResp model.ErrorResponse
 		json.Unmarshal(rec.Body.Bytes(), &errorResp)
-		assert.Equal(t, "item not found", errorResp.Errors)
+		assert.Equal(t, model.ErrItemNotFound.Error(), errorResp.Errors)
 	})
 
-	t.Run("Error: database error during balance update", func(t *testing.T) {
+	t.Run("Database error during balance update", func(t *testing.T) {
 		userRepo.On("GetUserByID", mock.Anything, "user1").
 			Return(&model.User{ID: "user1", Coins: 500}, nil).Once()
 
 		userRepo.On("UpdateUserCoinsTx", mock.Anything, mock.Anything, "user1", -300).
 			Return(errors.New("database error")).Once()
+
+		userRepo.On("BeginTx", mock.Anything).
+			Return(txMock, nil)
 
 		req := httptest.NewRequest(http.MethodGet, "/api/buy/hoody", nil)
 		rec := httptest.NewRecorder()

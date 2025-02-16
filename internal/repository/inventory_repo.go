@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 
-	"github.com/garaevmir/avitocoinstore/internal/model"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/garaevmir/avitocoinstore/internal/model"
 )
 
 type InventoryRepositoryInt interface {
@@ -14,11 +14,11 @@ type InventoryRepositoryInt interface {
 }
 
 type InventoryRepository struct {
-	pool *pgxpool.Pool
+	pool DB
 }
 
-func NewInventoryRepository(pool *pgxpool.Pool) *InventoryRepository {
-	return &InventoryRepository{pool: pool}
+func NewInventoryRepository(db DB) *InventoryRepository {
+	return &InventoryRepository{pool: db}
 }
 
 func (r InventoryRepository) GetUserInventory(ctx context.Context, userID string) ([]model.InventoryItem, error) {

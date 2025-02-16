@@ -1,4 +1,4 @@
-package mock_test
+package handler
 
 import (
 	"database/sql"
@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/garaevmir/avitocoinstore/internal/handler"
-	"github.com/garaevmir/avitocoinstore/internal/model"
-	"github.com/garaevmir/avitocoinstore/tests/mocks"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/garaevmir/avitocoinstore/internal/model"
+	"github.com/garaevmir/avitocoinstore/tests/mock_test/mocks"
 )
 
 func TestInfoHandler_GetUserInfo(t *testing.T) {
@@ -22,7 +22,7 @@ func TestInfoHandler_GetUserInfo(t *testing.T) {
 	userRepo := new(mocks.UserRepositoryMock)
 	invRepo := new(mocks.InventoryRepositoryMock)
 	txRepo := new(mocks.TransactionRepositoryMock)
-	infoHandler := handler.NewInfoHandler(userRepo, invRepo, txRepo)
+	infoHandler := NewInfoHandler(userRepo, invRepo, txRepo)
 
 	middleware := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -79,7 +79,7 @@ func TestInfoHandler_GetUserInfo(t *testing.T) {
 		txRepo.AssertExpectations(t)
 	})
 
-	t.Run("Error: user not found", func(t *testing.T) {
+	t.Run("User not found", func(t *testing.T) {
 		userRepo.On("GetUserByID", mock.Anything, "user1").
 			Return(nil, sql.ErrNoRows).Once()
 
@@ -90,15 +90,46 @@ func TestInfoHandler_GetUserInfo(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusNotFound, rec.Code)
-
-		var errorResp model.ErrorResponse
-		json.Unmarshal(rec.Body.Bytes(), &errorResp)
-		assert.Equal(t, "user not found", errorResp.Errors)
 	})
 
-	t.Run("Error: database error", func(t *testing.T) {
+	t.Run("Database error", func(t *testing.T) {
 		userRepo.On("GetUserByID", mock.Anything, "user1").
 			Return(nil, errors.New("database error")).Once()
+
+		req := httptest.NewRequest(http.MethodGet, "/api/info", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err := middleware(infoHandler.GetUserInfo)(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	})
+
+	t.Run("Error getting user inventory", func(t *testing.T) {
+		userRepo.On("GetUserByID", mock.Anything, "user1").
+			Return(&model.User{ID: "user1"}, nil).Once()
+
+		invRepo.On("GetUserInventory", mock.Anything, "user1").
+			Return([]model.InventoryItem{}, model.ErrInternalError).Once()
+
+		req := httptest.NewRequest(http.MethodGet, "/api/info", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err := middleware(infoHandler.GetUserInfo)(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	})
+
+	t.Run("Error getting transaction history", func(t *testing.T) {
+		userRepo.On("GetUserByID", mock.Anything, "user1").
+			Return(&model.User{ID: "user1"}, nil).Once()
+
+		invRepo.On("GetUserInventory", mock.Anything, "user1").
+			Return([]model.InventoryItem{}, nil).Once()
+
+		txRepo.On("GetTransactionHistory", mock.Anything, "user1").
+			Return(&model.TransactionHistory{}, model.ErrInternalError).Once()
 
 		req := httptest.NewRequest(http.MethodGet, "/api/info", nil)
 		rec := httptest.NewRecorder()

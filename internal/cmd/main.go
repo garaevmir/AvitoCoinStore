@@ -2,21 +2,23 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 	"time"
 
-	"github.com/garaevmir/avitocoinstore/internal/handler"
-	"github.com/garaevmir/avitocoinstore/internal/middleware"
-	"github.com/garaevmir/avitocoinstore/internal/repository"
-	"github.com/garaevmir/avitocoinstore/internal/service"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	echoSwagger "github.com/swaggo/echo-swagger"
+
+	"github.com/garaevmir/avitocoinstore/internal/handler"
+	"github.com/garaevmir/avitocoinstore/internal/middleware"
+	"github.com/garaevmir/avitocoinstore/internal/repository"
+	"github.com/garaevmir/avitocoinstore/internal/service"
 )
 
 func main() {
@@ -38,7 +40,6 @@ func main() {
 	e.Use(echoMiddleware.RateLimiter(echoMiddleware.NewRateLimiterMemoryStore(1000)))
 	e.Use(echoMiddleware.Logger())
 	e.Use(echoMiddleware.Recover())
-	e.Use(middleware.JWTAuth(os.Getenv("JWT_SECRET")))
 
 	authHandler := handler.NewAuthHandler(userRepo, os.Getenv("JWT_SECRET"))
 	coinHandler := handler.NewCoinHandler(transactionRepo, userRepo)
@@ -55,8 +56,12 @@ func main() {
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
+	s := &http.Server{
+		Addr: ":8080",
+	}
+
 	go func() {
-		if err := e.Start(":8080"); err != nil {
+		if err := e.StartServer(s); err != nil {
 			e.Logger.Info("Shutting down the server")
 		}
 	}()
@@ -65,11 +70,17 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := e.Shutdown(ctx); err != nil {
 		e.Logger.Fatal("HTTP server shutdown error:", err)
 	}
+
+	select {
+	case <-ctx.Done():
+		log.Printf("timeout of 5 seconds.\n")
+	}
+	log.Printf("Server exiting\n")
 
 }

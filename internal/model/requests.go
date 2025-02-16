@@ -6,6 +6,6 @@ type SendCoinRequest struct {
 }
 
 type AuthRequest struct {
-	Username string `json:"username" validate:"required,notblank"`
-	Password string `json:"password" validate:"required,notblank"`
+	Username string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }

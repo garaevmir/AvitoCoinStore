@@ -3,9 +3,10 @@ package mocks
 import (
 	"context"
 
-	"github.com/garaevmir/avitocoinstore/internal/model"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/garaevmir/avitocoinstore/internal/model"
 )
 
 type UserRepositoryMock struct {

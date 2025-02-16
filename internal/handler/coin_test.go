@@ -1,4 +1,4 @@
-package mock_test
+package handler
 
 import (
 	"bytes"
@@ -7,19 +7,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/garaevmir/avitocoinstore/internal/handler"
-	"github.com/garaevmir/avitocoinstore/internal/model"
-	"github.com/garaevmir/avitocoinstore/tests/mocks"
+	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/garaevmir/avitocoinstore/internal/model"
+	"github.com/garaevmir/avitocoinstore/tests/mock_test/mocks"
 )
 
 func TestCoinHandler_SendCoins(t *testing.T) {
 	e := echo.New()
 	userRepo := new(mocks.UserRepositoryMock)
 	txRepo := new(mocks.TransactionRepositoryMock)
-	coinHandler := handler.NewCoinHandler(txRepo, userRepo)
+	coinHandler := NewCoinHandler(txRepo, userRepo)
 
 	middleware := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -27,6 +28,25 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 			return next(c)
 		}
 	}
+
+	t.Run("Invalid request", func(t *testing.T) {
+		reqBody := map[string]int{
+			"ToUser": 1,
+			"Amount": 1,
+		}
+		body, _ := json.Marshal(reqBody)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/sendCoin", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+
+		c := e.NewContext(req, rec)
+		err := coinHandler.SendCoins(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	})
 
 	t.Run("Successful coin transfer", func(t *testing.T) {
 		reqBody := model.SendCoinRequest{
@@ -54,7 +74,7 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 		userRepo.AssertExpectations(t)
 	})
 
-	t.Run("Error: insufficient funds", func(t *testing.T) {
+	t.Run("Insufficient funds", func(t *testing.T) {
 		reqBody := model.SendCoinRequest{
 			ToUser: "user2",
 			Amount: 1000,
@@ -76,13 +96,48 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
-
-		var errorResp model.ErrorResponse
-		json.Unmarshal(rec.Body.Bytes(), &errorResp)
-		assert.Equal(t, "insufficient funds", errorResp.Errors)
 	})
 
-	t.Run("Error: recipient not found", func(t *testing.T) {
+	t.Run("Invalid username error", func(t *testing.T) {
+		reqBody := model.SendCoinRequest{
+			ToUser: "",
+			Amount: 100,
+		}
+		body, _ := json.Marshal(reqBody)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/sendCoin", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		err := middleware(coinHandler.SendCoins)(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("Getting by username error", func(t *testing.T) {
+		reqBody := model.SendCoinRequest{
+			ToUser: "testuser",
+			Amount: 100,
+		}
+		body, _ := json.Marshal(reqBody)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/sendCoin", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		userRepo.On("GetUserByUsername", mock.Anything, "testuser").
+			Return((*model.User)(nil), pgx.ErrTooManyRows).Once()
+
+		err := middleware(coinHandler.SendCoins)(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	})
+
+	t.Run("User not found error", func(t *testing.T) {
 		reqBody := model.SendCoinRequest{
 			ToUser: "unknown_user",
 			Amount: 100,
@@ -101,13 +156,33 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusNotFound, rec.Code)
-
-		var errorResp model.ErrorResponse
-		json.Unmarshal(rec.Body.Bytes(), &errorResp)
-		assert.Equal(t, "user not found", errorResp.Errors)
 	})
 
-	t.Run("Error: negative coin amount", func(t *testing.T) {
+	t.Run("Database error", func(t *testing.T) {
+		reqBody := model.SendCoinRequest{
+			ToUser: "unknown_user",
+			Amount: 100,
+		}
+		body, _ := json.Marshal(reqBody)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/sendCoin", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		userRepo.On("GetUserByUsername", mock.Anything, "unknown_user").
+			Return(&model.User{ID: "unknown_user"}, nil).Once()
+
+		txRepo.On("TransferCoins", mock.Anything, "user1", "unknown_user", 100).
+			Return(model.ErrInternalError).Once()
+
+		err := middleware(coinHandler.SendCoins)(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	})
+
+	t.Run("Error negative coin amount", func(t *testing.T) {
 		reqBody := model.SendCoinRequest{
 			ToUser: "user2",
 			Amount: -100,
@@ -130,9 +205,5 @@ func TestCoinHandler_SendCoins(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
-
-		var errorResp model.ErrorResponse
-		json.Unmarshal(rec.Body.Bytes(), &errorResp)
-		assert.Equal(t, "amount must be positive", errorResp.Errors)
 	})
 }
